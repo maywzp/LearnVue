@@ -16,12 +16,12 @@ Object.defineProperty(obj, 'name', {
   }
 })
 
-// defineProperty 函数封装
+// defineReactive 函数封装
 const callback = {
   target: null
 }
 
-const defineProperty = function(object, key, value, cb) {
+const defineReactive = function(object, key, value, cb) {
   let array = []
   Object.defineProperty(object, key, {
     configurable: true,
@@ -43,9 +43,9 @@ const defineProperty = function(object, key, value, cb) {
   })
 }
 
-// defineProperty 函数的调用
+// defineReactive 函数的调用
 const obj = {}
-defineProperty(obj, 'name', 'jack')
+defineReactive(obj, 'name', 'jack')
 
 callback.target = (newValue, oldValue) =>
   console.log('第一个依赖函数，新值为：' + newValue)
@@ -59,6 +59,7 @@ obj.name
 // 第一个依赖函数，新值为：ross
 // ross
 
+callback.target = null
 obj.name = 'titanic'
 obj.name
 // 第一个依赖函数，新值为：titanic
