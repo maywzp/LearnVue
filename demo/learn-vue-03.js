@@ -53,7 +53,7 @@ class Dep {
 Dep.target = null
 
 // 改进 defineReactive 函数
-const defineReactive = function (obj, key, val) {
+const defineReactive = function(obj, key, val) {
   const dep = new Dep()
   Object.defineProperty(obj, key, {
     configurable: true,
@@ -84,14 +84,16 @@ obj.name
 // jack
 
 const watcher1 = new Watcher(obj, 'name', (newValue, oldValue) =>
-console.log('添加的第一个 watch 函数，新值为：' + newValue))
+  console.log('添加的第一个 watch 函数，新值为：' + newValue)
+)
 obj.name = 'ross'
 obj.name
 // 添加的第一个 watch 函数，新值为：ross
 // ross
 
 const watcher2 = new Watcher(obj, 'name', (newValue, oldValue) =>
-console.log('添加的第二个 watch 函数，新值为：' + newValue))
+  console.log('添加的第二个 watch 函数，新值为：' + newValue)
+)
 obj.name = 'titanic'
 obj.name
 // 添加的第一个 watch 函数，新值为：titanic
@@ -102,3 +104,85 @@ obj.name
 watcher2.dep.removeSubs(watcher2)
 obj.name = 'boom'
 // 添加的第一个 watch 函数，新值为：boom
+
+// 多属性监听 及 多依赖处理
+class Watcher {
+  constructor(obj, getter, cb) {
+    this.obj = obj
+    this.getter = getter
+    this.cb = cb
+    this.deps = []
+    this.val = this.get()
+  }
+
+  get() {
+    Dep.target = this
+    const val = this.getter.call(obj)
+    Dep.target = null
+    return val
+  }
+
+  update() {
+    const val = this.getter.call(obj)
+    const oldVal = this.val
+    this.val = val
+    this.cb.call(this.obj, val, oldVal)
+  }
+
+  addDep(dep) {
+    this.deps.push(dep)
+  }
+
+  teardown() {
+    let i = this.deps.length
+    while (i--) {
+      this.deps[i].removeSub(this)
+    }
+    this.deps = []
+  }
+}
+
+// 改进后的调用
+const obj = {}
+defineReactive(obj, 'num1', 2)
+defineReactive(obj, 'num2', 4)
+
+const watcher = new Watcher(
+  obj,
+  function() {
+    return this.num1 + this.num2
+  },
+  function(newValue, oldValue) {
+    console.log(`这是一个监听函数，${obj.num1} + ${obj.num2} = ${newValue}`)
+  }
+)
+
+obj.num1 = 3
+// 这是一个监听函数，3 + 4 = 7
+obj.num2 = 10
+// 这是一个监听函数，3 + 10 = 13
+
+const watcher2 = new Watcher(
+  obj,
+  function() {
+    return this.num1 * this.num2
+  },
+  function(newValue, oldValue) {
+    console.log(`这是一个监听函数，${obj.num1} * ${obj.num2} = ${newValue}`)
+  }
+)
+
+obj.num1 = 4
+// 这是一个监听函数，4 + 10 = 14
+// 这是一个监听函数，4 * 10 = 40
+obj.num2 = 11
+// 这是一个监听函数，4 + 11 = 15
+// 这是一个监听函数，4 * 11 = 44
+
+// 测试取消
+watcher2.teardown()
+
+obj.num1 = 5
+// 这是一个监听函数，5 + 11 = 16
+obj.num2 = 12
+// 这是一个监听函数，5 + 12 = 17
